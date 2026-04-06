@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ja" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>竹（モウソウチク）詳細仕様データ + 3D Preview</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+                    },
+                    colors: {
+                        bamboo: {
+                            light: '#8bc34a',
+                            DEFAULT: '#4caf50',
+                            dark: '#2e7d32',
+                            base: '#f3f4f6',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #111827; color: #e5e7eb; }
+        }
+        
+        /* カードスタイル */
+        .spec-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border-top: 4px solid transparent;
+        }
+        .dark .spec-card {
+            background-color: #1f2937;
+            box-shadow: none;
+            border: 1px solid #374151;
+            border-top: 4px solid transparent;
+        }
+
+        /* カテゴリカラー */
+        .border-geo { border-top-color: #3b82f6; } /* 青：形状 */
+        .border-bio { border-top-color: #10b981; } /* 緑：枝葉 */
+        .border-mat { border-top-color: #d97706; } /* 黄：質感 */
+        .border-3d  { border-top-color: #8b5cf6; } /* 紫：3D */
+        .border-branch { border-top-color: #ec4899; } /* ピンク: 枝3D */
+
+        /* テキスト強調 */
+        .highlight { font-weight: 700; color: #059669; }
+        .dark .highlight { color: #34d399; }
+        .alert-point { font-weight: 700; color: #dc2626; }
+        .dark .alert-point { color: #f87171; }
+
+        /* 節グラフィック */
+        .stalk-visual {
+            background: linear-gradient(90deg, #558b2f 0%, #8bc34a 40%, #aed581 50%, #8bc34a 60%, #558b2f 100%);
+            position: relative;
+            border-radius: 4px;
+        }
+        .node-line {
+            width: 100%;
+            height: 2px;
+            background-color: #33691e;
+            position: absolute;
+        }
+
+        /* 3D Canvas Container */
+        .canvas-container {
+            width: 100%;
+            height: 400px;
+            background-color: #fafafa;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #f3f4f6;
+        }
+        .dark .canvas-container {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+    <!-- ヘッダー -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-green-800 dark:text-green-400 flex items-center gap-2">
+                <span class="text-2xl">🎋</span> モウソウチク詳細仕様書
+            </h1>
+            <nav class="hidden md:flex gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+                <a href="#geometry" class="hover:text-blue-500">1. 形状</a>
+                <a href="#branches" class="hover:text-green-500">2. 枝葉</a>
+                <a href="#materials" class="hover:text-amber-500">3. 生態</a>
+                <a href="#preview-3d" class="hover:text-purple-500 font-bold">4. 幹3D</a>
+                <a href="#branch-3d" class="hover:text-pink-500 font-bold">5. 枝3D</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 space-y-12">
+
+        <!-- SECTION 1: 形状・構造 -->
+        <section id="geometry">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 p-2 rounded-lg text-xl">📐</span>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">1. 形状・構造 (Geometry)</h2>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 1-1. 基本寸法 -->
+                <div class="spec-card border-geo lg:col-span-1 h-full">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">1-1. 基本寸法 (Scale)</h3>
+                    <ul class="space-y-4 text-sm leading-relaxed">
+                        <li class="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                            <span class="text-gray-500">全高 (Height)</span>
+                            <span class="font-bold text-lg">10–18 m <span class="text-xs font-normal text-gray-400">(最大20m)</span></span>
+                        </li>
+                        <li class="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                            <span class="text-gray-500">直径 (Diameter)</span>
+                            <span class="font-bold text-lg">10–15 cm <span class="text-xs font-normal text-gray-400">(基部)</span></span>
+                        </li>
+                        <li class="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                            <span class="text-gray-500">節数 (Nodes)</span>
+                            <span class="font-bold text-lg">45–55 節</span>
+                        </li>
+                        <li class="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-2">
+                            <span class="text-gray-500">枝下高 (Branchless)</span>
+                            <span class="font-bold text-lg">5–7.5 m <span class="text-xs font-normal text-gray-400">(17-36節まで枝なし)</span></span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- 1-2. 節間 -->
+                <div class="spec-card border-geo lg:col-span-1 h-full">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">1-2. 節間の長さ (Internodes)</h3>
+                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">
+                        縦方向の位置に応じて節間長が変化する。<br>
+                        <span class="highlight">Slow (密) → Fast (疎) → Slow (密)</span> のパターン。
+                    </p>
+                    <div class="flex gap-4 items-stretch">
+                        <div class="w-8 stalk-visual flex-shrink-0 flex flex-col-reverse overflow-hidden">
+                             <div class="node-line" style="bottom: 95%"></div>
+                             <div class="node-line" style="bottom: 90%"></div>
+                             <div class="node-line" style="bottom: 85%"></div>
+                             <div class="node-line" style="bottom: 80%"></div>
+                             <div class="node-line" style="bottom: 60%"></div>
+                             <div class="node-line" style="bottom: 40%"></div>
+                             <div class="node-line" style="bottom: 15%"></div>
+                             <div class="node-line" style="bottom: 8%"></div>
+                        </div>
+                        <div class="flex-1 space-y-3 text-sm">
+                            <div class="bg-blue-50 dark:bg-blue-900/20 p-2 rounded border-l-2 border-blue-400">
+                                <div class="font-bold text-blue-700 dark:text-blue-300">上部 (0.7H〜)</div>
+                                <div class="text-xs">3–10 cm (再び短くなる)</div>
+                            </div>
+                            <div class="bg-red-50 dark:bg-red-900/20 p-2 rounded border-l-2 border-red-400">
+                                <div class="font-bold text-red-700 dark:text-red-300">中部 (0.25〜0.6H)</div>
+                                <div class="text-xs">25–45 cm (最長区間)</div>
+                            </div>
+                            <div class="bg-blue-50 dark:bg-blue-900/20 p-2 rounded border-l-2 border-blue-400">
+                                <div class="font-bold text-blue-700 dark:text-blue-300">基部 (0〜0.2H)</div>
+                                <div class="text-xs">5–15 cm (詰まっている)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 1-3. 断面 -->
+                <div class="spec-card border-geo lg:col-span-1 h-full">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">1-3. 断面形状と歪み</h3>
+                    <div class="space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                        <div>
+                            <h4 class="font-bold mb-1 text-gray-900 dark:text-gray-100">① テーパー（先細り）</h4>
+                            <p>全体として単調減少。直線的〜わずかに凹型。</p>
+                            <p class="text-xs text-gray-500 mt-1">先端径 ≒ 0.45〜0.60 × 基部径</p>
+                        </div>
+                        <div class="border-t border-gray-100 dark:border-gray-700 pt-3">
+                            <h4 class="font-bold mb-1 text-gray-900 dark:text-gray-100">② 節の歪み (重要)</h4>
+                            <p class="mb-2">枝が出る節では、枝の基部が融合するため<span class="alert-point">断面が「D字型」あるいは「楕円」に歪む</span>。</p>
+                            <div class="bg-gray-100 dark:bg-gray-700/50 p-2 rounded flex items-center gap-3">
+                                <div class="w-10 h-10 border-2 border-green-600 rounded-full flex items-center justify-center font-bold text-xs relative">
+                                    節
+                                    <div class="absolute -right-1 w-2 h-1 bg-green-600"></div>
+                                </div>
+                                <div class="text-xs">歪みは<span class="highlight">180度交互</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: 枝と葉 -->
+        <section id="branches">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 p-2 rounded-lg text-xl">🌿</span>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">2. 枝・葉 (Branches & Foliage)</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- 2-1. 枝の発生ルール (Left: 4 Cols) -->
+                <div class="spec-card border-bio lg:col-span-4 h-full">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">2-1. 枝の発生ルール</h3>
+                    <div class="space-y-5 text-sm leading-relaxed">
+                        <div>
+                            <span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded text-xs font-bold">位置</span>
+                            <p class="mt-1">節リングの直上にある「枝リング」から発生。<br>枝下高（5-7.5m）より上では<span class="highlight">ほぼ全ての節から出る</span>。</p>
+                        </div>
+                        <div>
+                            <span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded text-xs font-bold">本数 (モウソウチクの特徴)</span>
+                            <p class="mt-1">1つの節から<span class="alert-point">2本</span>の枝が出る。<br>特徴は<span class="highlight">「不等長（太さが違う）」</span>。</p>
+                        </div>
+                        <div>
+                            <span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded text-xs font-bold">方向 (交互互生)</span>
+                            <p class="mt-1">節ごとに<span class="alert-point">180度反対側</span>に出る。<br>これに伴い幹の歪みもジグザグになる。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-2. 階層構造図解 (Middle: 8 Cols - 拡大) -->
+                <div class="spec-card border-bio lg:col-span-8 h-full">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">2-2. 枝の階層構造</h3>
+                    <p class="text-sm text-gray-500 mb-4">葉は太い枝には付かず、末端の小枝にのみ付く。</p>
+                    <div class="relative bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-100 dark:border-gray-600">
+                        <div class="flex flex-col gap-4 text-sm">
+                            <!-- Lv1 -->
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-green-800 rounded-full flex items-center justify-center text-white font-bold text-xs">1</div>
+                                <div class="flex-1 p-2 bg-white dark:bg-gray-800 rounded shadow-sm border-l-4 border-green-800">
+                                    <span class="font-bold">主枝（一次分岐）</span>
+                                    <p class="text-xs text-gray-500">節から出る最も太い枝。構造体。</p>
+                                </div>
+                            </div>
+                            <!-- Lv2 -->
+                            <div class="flex items-center gap-2 pl-6">
+                                <div class="w-px h-8 bg-gray-300 dark:bg-gray-600 absolute left-8 -mt-8"></div>
+                                <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs">2</div>
+                                <div class="flex-1 p-2 bg-white dark:bg-gray-800 rounded shadow-sm border-l-4 border-green-600">
+                                    <span class="font-bold">小枝（二次分岐）</span>
+                                    <p class="text-xs text-gray-500">主枝の節から出る。</p>
+                                </div>
+                            </div>
+                            <!-- Lv3 -->
+                            <div class="flex items-center gap-2 pl-12">
+                                <div class="w-px h-8 bg-gray-300 dark:bg-gray-600 absolute left-[3.5rem] -mt-8"></div>
+                                <div class="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center text-white font-bold text-xs">3</div>
+                                <div class="flex-1 p-2 bg-white dark:bg-gray-800 rounded shadow-sm border-l-4 border-green-400">
+                                    <span class="font-bold">葉枝（三次分岐）</span>
+                                    <p class="text-xs text-gray-500">小枝の先。ここから葉が出る。</p>
+                                </div>
+                            </div>
+                            <!-- Lv4 Leaf -->
+                            <div class="flex items-center gap-2 pl-[4.5rem]">
+                                <div class="w-px h-8 bg-gray-300 dark:bg-gray-600 absolute left-[5rem] -mt-8"></div>
+                                <div class="w-8 h-8 bg-green-300 rounded-full flex items-center justify-center text-white font-bold text-xs">4</div>
+                                <div class="flex-1 p-2 bg-white dark:bg-gray-800 rounded shadow-sm border-l-4 border-green-300">
+                                    <span class="font-bold">葉の房（Foliage）</span>
+                                    <p class="text-xs text-gray-500">先端に5-10枚が扇状に付く。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-3. 葉の形状詳細 (Left: 4 Cols) -->
+                <div class="spec-card border-bio lg:col-span-4 h-full">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">2-3. 葉の形状と付き方</h3>
+                    <div class="text-sm space-y-4">
+                        <div>
+                            <span class="font-bold text-green-700 dark:text-green-300">① 形状 (Shape)</span>
+                            <p class="mt-1"><span class="highlight">披針形（ひしんけい）</span></p>
+                            <ul class="list-disc list-inside text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                <li>細長い笹の葉型</li>
+                                <li>先端が鋭く尖る</li>
+                                <li>基部は丸みを帯びる</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <span class="font-bold text-green-700 dark:text-green-300">② サイズ (Size)</span>
+                            <ul class="list-disc list-inside text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                <li>長さ: <span class="font-bold">5〜15 cm</span></li>
+                                <li>幅: <span class="font-bold">1〜2 cm</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <span class="font-bold text-green-700 dark:text-green-300">③ 付き方</span>
+                            <p class="mt-1">葉枝の先端に<span class="alert-point">5〜10枚</span>がまとまって付く。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-4. 枝の定量的スペック (Right: 8 Cols) -->
+                <div class="spec-card border-bio lg:col-span-8 h-full bg-green-50 dark:bg-green-900/10">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">2-4. 枝の定量的スペック (Dimensions & Counts)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700 dark:text-gray-300">
+                        <div>
+                            <h4 class="font-bold text-green-800 dark:text-green-300 mb-2 flex items-center">
+                                <span class="bg-green-200 dark:bg-green-800 rounded px-2 mr-2 text-xs">長さ</span> Length Profile
+                            </h4>
+                            <ul class="space-y-3 text-xs leading-relaxed">
+                                <li class="border-b border-green-100 dark:border-green-800 pb-2">
+                                    <span class="font-bold block text-sm">最大長: 2 〜 3 m</span>
+                                    <span class="text-gray-500">幹の中央部で最長。</span>
+                                </li>
+                                <li class="border-b border-green-100 dark:border-green-800 pb-2">
+                                    <span class="font-bold block text-sm">上部・先端: 30 cm 〜 1 m</span>
+                                    <span class="text-gray-500">上に行くほど急激に短くなり、先端は「ほうき状」。</span>
+                                </li>
+                                <li>
+                                    <span class="font-bold block text-sm">枝の比率:</span>
+                                    <span class="text-gray-500">主枝(10) : 小枝(6) : 葉枝(3)</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-green-800 dark:text-green-300 mb-2 flex items-center">
+                                <span class="bg-green-200 dark:bg-green-800 rounded px-2 mr-2 text-xs">数</span> Branching Counts
+                            </h4>
+                            <ul class="space-y-3 text-xs leading-relaxed">
+                                <li class="border-b border-green-100 dark:border-green-800 pb-2">
+                                    <span class="font-bold block text-sm">一次分岐</span>
+                                    <span class="font-bold text-red-500">2本 / 節</span> (不等長)
+                                </li>
+                                <li class="border-b border-green-100 dark:border-green-800 pb-2">
+                                    <span class="font-bold block text-sm">二次・三次分岐</span>
+                                    <span class="font-bold">1 〜 3本 / 枝節</span>
+                                </li>
+                                <li>
+                                    <span class="font-bold block text-sm">葉の枚数</span>
+                                    <span class="font-bold">5 〜 10枚 / 葉枝の先端</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 3: 質感・生態 -->
+        <section id="materials">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 p-2 rounded-lg text-xl">🎨</span>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">3. 質感・生態 (Materials & Life)</h2>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- 3-1. 色の経年変化 -->
+                <div class="spec-card border-mat lg:col-span-1 h-full">
+                    <h3 class="text-lg font-bold mb-2">0年目 (当年)</h3>
+                    <div class="w-full h-12 bg-[#26a69a] rounded mb-2"></div>
+                    <p class="text-xs text-gray-500">青緑色。白い粉（ワックス）が多く、節リングも白い。</p>
+                </div>
+                <div class="spec-card border-mat lg:col-span-1 h-full">
+                    <h3 class="text-lg font-bold mb-2">1-3年 (若齢)</h3>
+                    <div class="w-full h-12 bg-[#689f38] rounded mb-2"></div>
+                    <p class="text-xs text-gray-500">落ち着いた緑。光沢が減る。</p>
+                </div>
+                <div class="spec-card border-mat lg:col-span-1 h-full">
+                    <h3 class="text-lg font-bold mb-2">4-7年 (壮齢)</h3>
+                    <div class="w-full h-12 bg-[#8d8048] rounded mb-2"></div>
+                    <p class="text-xs text-gray-500">黄緑〜褐色。汚れでリングが黒ずむ。</p>
+                </div>
+                <!-- 7年以降 -->
+                <div class="spec-card border-mat lg:col-span-1 bg-gray-50 dark:bg-gray-700/30 h-full">
+                    <h3 class="text-lg font-bold mb-2 text-gray-600 dark:text-gray-300">7年以降 (老竹)</h3>
+                    <div class="w-full h-12 bg-[#a9a9a9] rounded mb-2 border border-gray-300"></div>
+                    <ul class="list-disc list-inside text-xs text-gray-500 space-y-1">
+                        <li>灰緑色 / 黄褐色</li>
+                        <li>表皮のザラつき</li>
+                        <li>地際からの腐朽</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Leaf Renewal & Shedding [NEW] -->
+            <div class="grid grid-cols-1 gap-6 mt-6">
+                <div class="spec-card border-mat h-full border-l-4 border-amber-400">
+                    <h3 class="text-lg font-bold mb-2 text-gray-800 dark:text-gray-100">3-5. 葉の更新と「竹の秋」 (Leaf Renewal)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700 dark:text-gray-300">
+                        <div>
+                            <span class="font-bold block text-amber-600 dark:text-amber-400">落葉サイクル</span>
+                            <p class="text-xs mt-1">常緑に見えるが、<span class="highlight">毎年春に葉を入れ替える</span>。春に古い葉が黄変して散る現象を「竹の秋」と呼ぶ。</p>
+                        </div>
+                        <div>
+                            <span class="font-bold block text-amber-600 dark:text-amber-400">葉の量の変化</span>
+                            <p class="text-xs mt-1"><span class="font-bold">若竹:</span> 葉が多く茂る。<br><span class="font-bold">老竹(7年~):</span> 葉の量が減り、枝先がスカスカになる。</p>
+                        </div>
+                        <div>
+                            <span class="font-bold block text-amber-600 dark:text-amber-400">葉の色の変化</span>
+                            <p class="text-xs mt-1">
+                                <span class="font-bold">落葉前:</span> 鮮やかな緑 → <span class="text-yellow-600 font-bold">黄色</span>へ変化して散る。<br>
+                                <span class="font-bold">老竹の葉:</span> 全体的に色が淡く、少し黄色味を帯びた緑になる。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 追加情報: 寿命・地下茎 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                 <div class="spec-card border-mat h-full">
+                    <h3 class="text-lg font-bold mb-2 text-gray-800 dark:text-gray-100">寿命 (Lifespan)</h3>
+                    <div class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                        <div class="flex justify-between border-b border-gray-100 dark:border-gray-700 pb-1">
+                            <span>個体 (1本)</span>
+                            <span class="font-bold">10〜15 年</span>
+                        </div>
+                        <div class="flex justify-between pb-1">
+                            <span>竹林全体</span>
+                            <span class="font-bold">60〜120 年</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">竹林全体は地下茎で繋がっており、周期的に一斉開花→枯死するサイクルを持つ。</p>
+                    </div>
+                </div>
+                 <div class="spec-card border-mat h-full">
+                    <h3 class="text-lg font-bold mb-2 text-gray-800 dark:text-gray-100">地下茎 (Rhizome)</h3>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                        <span class="font-bold text-amber-600">走出型 (Running Type)</span>
+                    </p>
+                    <ul class="list-disc list-inside text-xs text-gray-500 space-y-1">
+                        <li>地下で横に長く伸び、節から散発的に筍を出す。</li>
+                        <li>一箇所に留まらず面で広がるため、竹林を形成しやすい。</li>
+                        <li>地際から他の竹と繋がっている。</li>
+                    </ul>
+                </div>
+                 <div class="spec-card border-mat h-full">
+                    <h3 class="text-lg font-bold mb-2 text-gray-800 dark:text-gray-100">成長特性 (Growth)</h3>
+                    <div class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                        <p><span class="font-bold">伸長期間:</span> 30〜60日</p>
+                        <p><span class="font-bold">最大速度:</span> 1 m / 日</p>
+                        <p class="text-xs text-gray-500">春に一気に伸びて完了。その後は太くならない（二次成長なし）。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 4: 3D PREVIEW (Stalk) -->
+        <!-- ========================================== -->
+        <section id="preview-3d">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2 mt-12">
+                <span class="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 p-2 rounded-lg text-xl">🧊</span>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">4. 竹幹3Dモデル (Stalk Preview)</h2>
+            </div>
+            <div class="spec-card border-3d w-full">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <div class="flex-1">
+                        <div id="stalk-canvas-container" class="canvas-container"></div>
+                        <p class="text-xs text-center mt-2 text-gray-500">ドラッグで回転 / ホイールでズーム</p>
+                    </div>
+                    <div class="w-full lg:w-64 space-y-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-100">確認ポイント</h3>
+                        <div class="text-sm space-y-3">
+                            <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded border-l-4 border-green-500">
+                                <span class="font-bold block">テーパー</span>
+                                <span class="text-xs text-gray-500">下から上へ細くなる。</span>
+                            </div>
+                            <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded border-l-4 border-red-500">
+                                <span class="font-bold block">交互互生</span>
+                                <span class="text-xs text-gray-500">枝の発生点が180度交互。</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ========================================== -->
+        <!-- SECTION 5: 3D PREVIEW (Branch Detail) -->
+        <!-- ========================================== -->
+        <section id="branch-3d">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2 mt-12">
+                <span class="bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-300 p-2 rounded-lg text-xl">🌿</span>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">5. 枝構造詳細 3Dプレビュー (Branch Detail)</h2>
+            </div>
+            <div class="spec-card border-branch w-full">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <div class="flex-1">
+                        <div id="branch-canvas-container" class="canvas-container"></div>
+                        <p class="text-xs text-center mt-2 text-gray-500">ドラッグで回転 / ホイールでズーム</p>
+                    </div>
+                    <div class="w-full lg:w-64 space-y-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-100">枝構造のポイント</h3>
+                        <p class="text-xs text-gray-500 mb-2">記述通りに階層構造を再現しました。</p>
+                        <div class="text-sm space-y-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 bg-[#558b2f] rounded-full"></div>
+                                <span class="font-bold">Lv1. 主枝 (Main)</span>
+                            </div>
+                            <div class="flex items-center gap-2 pl-4">
+                                <div class="w-3 h-3 bg-[#689f38] rounded-full"></div>
+                                <span class="font-bold">Lv2. 小枝 (Sub)</span>
+                            </div>
+                            <div class="flex items-center gap-2 pl-8">
+                                <div class="w-3 h-3 bg-[#8bc34a] rounded-full"></div>
+                                <span class="font-bold">Lv3. 葉枝 (Twig)</span>
+                            </div>
+                            <div class="flex items-center gap-2 pl-12">
+                                <div class="w-3 h-3 bg-[#4caf50] rounded-full" style="clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></div>
+                                <span class="font-bold text-green-600">Lv4. 葉 (Leaf)</span>
+                            </div>
+                            <div class="mt-4 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs text-gray-600">
+                                <span class="font-bold">扇状の房 (Fan shape):</span><br>
+                                葉枝の先端に5-8枚の葉が放射状に広がる様子を確認してください。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- THREE.JS LOGIC -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initStalkPreview();
+            initBranchPreview();
+            // ... existing js ...
+            function initStalkPreview() {
+                const container = document.getElementById('stalk-canvas-container');
+                if(!container) return;
+                const scene = new THREE.Scene();
+                scene.background = null; 
+                const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+                camera.position.set(4, 6, 6);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.shadowMap.enabled = true;
+                container.appendChild(renderer.domElement);
+                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 2.0;
+                const bambooGroup = new THREE.Group();
+                const bambooMat = new THREE.MeshStandardMaterial({ color: 0x689f38, roughness: 0.4 });
+                const ringMat = new THREE.MeshStandardMaterial({ color: 0xdcedc8, roughness: 0.8 });
+                const jointMat = new THREE.MeshStandardMaterial({ color: 0x33691e });
+                let currentHeight = 0;
+                let baseRadius = 0.6;
+                const tubeRadius = 0.04; 
+                for (let i = 0; i < 8; i++) {
+                    const topRadius = baseRadius * 0.92;
+                    const h = 1.5 + (Math.sin(i * 0.5) * 0.3);
+                    const internode = new THREE.Mesh(new THREE.CylinderGeometry(topRadius, baseRadius, h, 32), bambooMat);
+                    internode.position.y = currentHeight + h / 2;
+                    internode.castShadow = true;
+                    bambooGroup.add(internode);
+                    const ring = new THREE.Mesh(new THREE.TorusGeometry(topRadius, tubeRadius, 8, 32), ringMat);
+                    ring.rotation.x = Math.PI / 2;
+                    ring.position.y = currentHeight + h;
+                    ring.scale.z = 0.6;
+                    bambooGroup.add(ring);
+                    const bulgeGroup = new THREE.Group();
+                    bulgeGroup.position.y = currentHeight + h - 0.1;
+                    bulgeGroup.rotation.y = (i % 2 === 0) ? 0 : Math.PI;
+                    const bulge = new THREE.Mesh(new THREE.SphereGeometry(topRadius * 0.3, 16, 16), bambooMat);
+                    bulge.scale.set(1, 1.5, 0.5);
+                    bulge.position.set(topRadius * 0.8, 0, 0);
+                    bulgeGroup.add(bulge);
+                    const stub1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.3, 8), jointMat);
+                    stub1.rotation.z = -Math.PI / 4;
+                    stub1.position.set(topRadius * 0.9, 0.05, 0.08);
+                    bulgeGroup.add(stub1);
+                    const stub2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.2, 8), jointMat);
+                    stub2.rotation.z = -Math.PI / 3;
+                    stub2.position.set(topRadius * 0.9, 0.05, -0.08);
+                    bulgeGroup.add(stub2);
+                    bambooGroup.add(bulgeGroup);
+                    currentHeight += h;
+                    baseRadius = topRadius;
+                }
+                bambooGroup.position.y = -currentHeight / 2;
+                scene.add(bambooGroup);
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(5, 10, 7);
+                dirLight.castShadow = true;
+                scene.add(dirLight);
+                const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+                backLight.position.set(-5, 5, -5);
+                scene.add(backLight);
+                animate(renderer, scene, camera, controls);
+                handleResize(container, camera, renderer);
+            }
+
+            function initBranchPreview() {
+                const container = document.getElementById('branch-canvas-container');
+                if(!container) return;
+                const scene = new THREE.Scene();
+                scene.background = null; 
+                const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+                camera.position.set(1.8, 1.2, 1.8); 
+                camera.lookAt(0, 0.5, 0);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                container.appendChild(renderer.domElement);
+                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.target.set(0, 0.5, 0); 
+                const branchGroup = new THREE.Group();
+                const stalkMat = new THREE.MeshStandardMaterial({ color: 0x558b2f, roughness: 0.6 });
+                const branchMat = new THREE.MeshStandardMaterial({ color: 0x689f38, roughness: 0.5 }); 
+                const subBranchMat = new THREE.MeshStandardMaterial({ color: 0x7cb342, roughness: 0.5 }); 
+                const twigMat = new THREE.MeshStandardMaterial({ color: 0x8bc34a, roughness: 0.6 }); 
+                const leafMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, side: THREE.DoubleSide, roughness: 0.7, metalness: 0.1 });
+                const trunkRadius = 0.15;
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(trunkRadius, trunkRadius, 1.0, 32), stalkMat);
+                trunk.position.y = 0;
+                branchGroup.add(trunk);
+                const trunkRing = new THREE.Mesh(new THREE.TorusGeometry(trunkRadius, 0.01, 8, 32), new THREE.MeshStandardMaterial({color: 0xdcedc8}));
+                trunkRing.rotation.x = Math.PI/2;
+                trunkRing.position.y = 0.5;
+                branchGroup.add(trunkRing);
+                const mainBranchLen = 1.4;
+                const mainBranchSegs = 4;
+                const mainBranchData = createZigZagBranch(0.025, mainBranchLen, mainBranchSegs, branchMat);
+                const mainBranch = mainBranchData.group;
+                mainBranch.position.set(trunkRadius * 0.8, 0.5, 0); 
+                mainBranch.rotation.z = -Math.PI / 3; 
+                mainBranch.rotation.y = 0.2; 
+                branchGroup.add(mainBranch);
+                for(let i=1; i < mainBranchSegs; i++) {
+                    const side = (i % 2 === 0) ? 1 : -1;
+                    const subLen = 0.5 * (1 - i/(mainBranchSegs+1)) + 0.2;
+                    const subSegs = 3;
+                    const subBranchData = createZigZagBranch(0.012, subLen, subSegs, subBranchMat);
+                    const subBranch = subBranchData.group;
+                    const parentSegment = mainBranchData.segments[i];
+                    const segmentLen = mainBranchLen / mainBranchSegs;
+                    subBranch.position.y = segmentLen * 0.45; 
+                    subBranch.rotation.z = (Math.PI / 3.5) * side; 
+                    subBranch.rotation.y = (Math.PI / 4) * side;   
+                    parentSegment.add(subBranch);
+                    for(let j=1; j < subSegs; j++) {
+                         const twigLen = 0.15;
+                         const twig = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.004, twigLen, 5), twigMat);
+                         const subSegment = subBranchData.segments[j];
+                         const subSegH = subLen / subSegs;
+                         twig.position.y = subSegH * 0.45;
+                         twig.rotation.z = (Math.PI / 3) * (j%2===0 ? 1:-1);
+                         twig.rotation.x = Math.PI / 4;
+                         subSegment.add(twig);
+                         addLeafCluster(twig, twigLen/2, leafMat);
+                    }
+                    const lastSubSeg = subBranchData.segments[subSegs-1];
+                    const lastSubH = subLen / subSegs;
+                    addLeafCluster(lastSubSeg, lastSubH*0.4, leafMat);
+                }
+                const lastMainSeg = mainBranchData.segments[mainBranchSegs-1];
+                const lastMainH = mainBranchLen / mainBranchSegs;
+                addLeafCluster(lastMainSeg, lastMainH*0.4, leafMat);
+                scene.add(branchGroup);
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(5, 10, 7);
+                scene.add(dirLight);
+                const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+                backLight.position.set(-5, 5, -5);
+                scene.add(backLight);
+                animate(renderer, scene, camera, controls);
+                handleResize(container, camera, renderer);
+            }
+
+            function createZigZagBranch(baseRadius, length, segments, material) {
+                const group = new THREE.Group();
+                const ringMat = new THREE.MeshStandardMaterial({ color: 0xdcedc8 });
+                const segmentMeshes = [];
+                let currentY = 0;
+                const segLen = length / segments;
+                let currentRadius = baseRadius;
+                for(let i=0; i<segments; i++) {
+                    const nextRadius = currentRadius * 0.85;
+                    const geo = new THREE.CylinderGeometry(nextRadius, currentRadius, segLen, 8);
+                    const mesh = new THREE.Mesh(geo, material);
+                    const angle = (i % 2 === 0) ? 0.08 : -0.08;
+                    mesh.rotation.z = angle;
+                    mesh.position.y = currentY + segLen/2;
+                    mesh.position.x = (i % 2 === 0) ? 0 : 0.01; 
+                    group.add(mesh);
+                    segmentMeshes.push(mesh);
+                    const ring = new THREE.Mesh(new THREE.TorusGeometry(nextRadius, 0.003, 4, 8), ringMat);
+                    ring.rotation.x = Math.PI/2;
+                    ring.rotation.y = angle;
+                    ring.position.y = currentY + segLen;
+                    ring.position.x = mesh.position.x + (Math.sin(angle)*segLen/2);
+                    group.add(ring);
+                    currentY += segLen;
+                    currentRadius = nextRadius;
+                }
+                return { group: group, segments: segmentMeshes };
+            }
+
+            function addLeafCluster(parentMesh, yPos, material) {
+                const cluster = new THREE.Group();
+                cluster.position.y = yPos;
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0);
+                shape.quadraticCurveTo(0.03, 0.1, 0, 0.4); 
+                shape.quadraticCurveTo(-0.03, 0.1, 0, 0);  
+                const leafGeo = new THREE.ShapeGeometry(shape);
+                leafGeo.scale(0.8, 0.8, 0.8); 
+                const count = 5;
+                for(let i=0; i<count; i++) {
+                    const leaf = new THREE.Mesh(leafGeo, material);
+                    const angle = -Math.PI/3 + (Math.PI*2/3) * (i/(count-1));
+                    leaf.rotation.z = angle; 
+                    leaf.rotation.x = -0.4; 
+                    leaf.position.z = (i*0.002);
+                    cluster.add(leaf);
+                }
+                cluster.rotation.x = Math.PI / 3; 
+                parentMesh.add(cluster);
+            }
+
+            function animate(renderer, scene, camera, controls) {
+                function loop() {
+                    requestAnimationFrame(loop);
+                    controls.update();
+                    renderer.render(scene, camera);
+                }
+                loop();
+            }
+
+            function handleResize(container, camera, renderer) {
+                window.addEventListener('resize', () => {
+                    if (!container) return;
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
